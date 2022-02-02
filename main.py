@@ -31,7 +31,7 @@ def predict(text,maxLen,tokenizer,labels,model):
     pText = pad_sequences(tokenizedText,maxlen=maxLen)
     pred = int(model.predict(pText).round().item())
     val = labels[1][pred]
-    print(val)
+    print(f"{text} := {val}")
 
 def getModel(vocabSize,inputSize,vectorLength=32):
     model = Sequential()
@@ -63,39 +63,44 @@ def tokenize(sentence):
     return encodedTexts,len(tokenizer.word_counts),tokenizer
 
 def filter(df):
-    reviewDf = df[['text','airline_sentiment']]
-    reviewDf = reviewDf.rename(columns = {'airline_sentiment':'sentiment'})
-    reviewDf = reviewDf[reviewDf['sentiment'] != 'neutral']
+    reviewDf = df[['sentiment','review']]
+    sentiment = {0:'negative',1:'positive'}
+    reviewDf['val'] = reviewDf['sentiment'].map(sentiment)
+    reviewDf = reviewDf[['review','val']]
+    reviewDf = reviewDf.rename(columns = {'val':'sentiment'})
     label = reviewDf['sentiment'].factorize()
-    sentence = reviewDf.text.values
+    sentence = reviewDf['review'].values
     return label,sentence
 
-def test():
-    df = pd.read_csv('./data/Tweets.csv')
+def getInfo():
+    df = pd.read_csv('./data/Movies.tsv',sep='\t')
     labels,sentence = filter(df)
     encodedTexts,vocabSize,tokenizer = tokenize(sentence)
     paddedSequences,inputSize = pad(encodedTexts)
+    return labels,vocabSize,inputSize,tokenizer,paddedSequences
+
+def test():
+    labels,vocabSize,inputSize,tokenizer,paddedSequences = getInfo()
     model = load_model('model')
-    text = "the flight experience was enjoyed"
-    predict(text,inputSize,tokenizer,labels,model)
+    while True:
+        text = input("Enter :")
+        predict(text,inputSize,tokenizer,labels,model)
 
 def train():
-    df = pd.read_csv('./data/Tweets.csv')
-    labels,sentence = filter(df)
-    encodedTexts,vocabSize,tokenizer = tokenize(sentence)
-    paddedSequences,inputSize = pad(encodedTexts)
+    labels,vocabSize,inputSize,tokenizer,paddedSequences = getInfo()
     model = getModel(vocabSize,inputSize)
     print(model.summary())
     #print(labels)
     history = model.fit(paddedSequences,labels[0],validation_split=0.2,epochs=5,batch_size=32)
-    #plot(history.history)
+    plot(history.history)
     model.save('model')
 
 def main():
-    #train()
+    train()
     test()
 
 if __name__ == '__main__':
     main()
 
 
+#https://www.kaggle.com/owaish/imdb-movie-review
