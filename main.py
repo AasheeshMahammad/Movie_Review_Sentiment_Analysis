@@ -101,6 +101,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-#https://www.kaggle.com/owaish/imdb-movie-review
